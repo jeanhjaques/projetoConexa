@@ -1,16 +1,18 @@
-import { useState } from "react"
+import { useState, useContext } from "react"
 import { View, Text, StyleSheet, Button } from "react-native"
-import { TextInput, IconButton, Button as ButtonPaper } from "react-native-paper"
+import { TextInput, Button as ButtonPaper, Dialog, Portal } from "react-native-paper"
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import VisualizadorData from "./components/VisualizadorData";
-
-
+import {DadosLoginContexto} from './providers/DadosLogin';
 
 export default function NovaConsulta({ navigation }) {
+    const { dadosLogin, setDadosLogin } = useContext(DadosLoginContexto);
+
     const [observacao, setObservacao] = useState("");
     const [nomePaciente, setNomePaciente] = useState("");
-    const [dataConsulta, setDataConsulta] = useState("")
+    const [dataConsulta, setDataConsulta] = useState("");
 
+    const [mensagem, setMensagem] = useState("")
 
     const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
@@ -29,9 +31,37 @@ export default function NovaConsulta({ navigation }) {
         hideDatePicker();
     };
 
+    function cadastrarConsulta() {
+        const novaConsulta = {
+            "dataConsulta": dataConsulta,
+            "idMedico": "0", //Esse dado nao está disponivel na API, então fixei por enquanto
+            "observacao": observacao,
+            "paciente": nomePaciente
+        }
+
+        fetch('http://desafio.conexasaude.com.br/api/consulta', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + dadosLogin.token,
+            },
+            body: JSON.stringify(novaConsulta)
+        })
+            .then(async (respostaDoServer) => {
+                const dadosDaResposta = await respostaDoServer.json();
+                console.log(dadosDaResposta)
+
+                if (dadosDaResposta.errorCode != null) {
+                    setMensagem(dadosDaResposta.message)
+                }
+                else {
+                    setMensagem("Cadastrado com sucesso")
+                }
+            })
+    }
+
     return (
         <View style={styles.container}>
-
             <TextInput
                 style={styles.input}
                 mode="outlined"
@@ -56,7 +86,7 @@ export default function NovaConsulta({ navigation }) {
                         <Text style={styles.nenhumaDataSelecionada}>Nenhuma data selecionada</Text>
                 }
                 <View style={styles.buttonEditorData}>
-                    <ButtonPaper icon="calendar-edit" mode="contained" onPress={showDatePicker}>
+                    <ButtonPaper color='#0031b2' icon="calendar-edit" mode="contained" onPress={showDatePicker}>
                         Selecionar Data
                     </ButtonPaper>
                 </View>
@@ -68,7 +98,15 @@ export default function NovaConsulta({ navigation }) {
                 onCancel={hideDatePicker}
             />
             <View>
-                <Button style={styles.button} title="Cadastrar" />
+                {nomePaciente != "" && dataConsulta != "" && observacao != "" ?
+                    <Button onPress={() => cadastrarConsulta()} color='#f28080' style={styles.button} title="Cadastrar" />
+
+                    :
+                    <Button disabled onPress={() => cadastrarConsulta()} style={styles.button} title="Cadastrar" />
+                }
+            </View>
+            <View style={styles.mensagemContainer}>
+                <Text style={styles.mensagem}>{mensagem}</Text>
             </View>
         </View>
     )
@@ -95,5 +133,15 @@ const styles = StyleSheet.create({
     buttonEditorData: {
         marginVertical: 5,
         marginHorizontal: 50
+    },
+    mensagemContainer: {
+        justifyContent: 'center'
+    },
+    mensagem: {
+        fontSize: 16,
+        fontWeight: "bold",
+        marginVertical: 5,
+        textAlign: 'center',
+        justifyContent: 'center'
     }
 })

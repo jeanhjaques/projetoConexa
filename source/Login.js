@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Image, Button } from "react-native"
+import { useState, useContext} from "react";
+import { View, StyleSheet, Image, Button } from "react-native"
 import { TextInput } from "react-native-paper";
+import {DadosLoginContexto} from './providers/DadosLogin';
 
 
 
@@ -9,6 +10,8 @@ export default function Login({ navigation }) {
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("")
     const [secureTextEntry, setSecureTextEntry] = useState(true);
+
+    const { dadosLogin, setDadosLogin } = useContext(DadosLoginContexto);
 
     function efetuarLogin(){
         const loginJson = {
@@ -27,6 +30,7 @@ export default function Login({ navigation }) {
               const dadosDaResposta = await respostaDoServer.json();
               const token = dadosDaResposta.data.token;
               console.log(token)
+              setDadosLogin(dadosDaResposta.data)
               navigation.navigate('Consultas')
             })
     }
@@ -57,7 +61,7 @@ export default function Login({ navigation }) {
                     onChangeText={senha => setSenha(senha)}
                     right={<TextInput.Icon name="eye" onPress={() => setSecureTextEntry(!secureTextEntry)} />}
                 />
-                <Button style={styles.button} onPress={()=> efetuarLogin()} title="Entrar"/>
+                <Button style={styles.button} color="#f28080" onPress={()=> efetuarLogin()} title="Entrar"/>
             </View>
         </View>
     )
